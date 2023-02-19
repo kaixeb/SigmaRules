@@ -1,0 +1,173 @@
+action: global
+title: Executing security analysis tools on UNIX/Linux
+id: d8b7d21d-b1b5-41ce-8b8c-b6c9336b6be2
+status: experimental
+author: kaixeb
+date: 2022/10/17
+references:
+  - https://habr.com/ru/company/pt/blog/513032/
+  - https://habr.com/ru/company/pt/blog/515532/
+  - https://fourcore.io/blogs/sigma-rules-open-source-threat-hunting-approach
+  - https://github.com/SigmaHQ/sigma-specification
+logsource:
+  product: linux
+  service: auditd
+---
+description: Detects usage of popular network scanning tools
+detection: 
+  selection1:
+    type: 'SYSCALL'
+    exe|contains:
+      - 'hping3'
+      - 'fping'
+      - 'dnsenum'
+      - 'arping'
+      - 'netdiscover'
+      - 'nbtscan'
+      - 'nmblookup'
+      - 'onesixtyone'
+      - 'snmpwalk'
+      - 'snmpcheck'
+      - 'sslscan'
+  selection2:
+    type: 'EXECVE'
+  keywords2:
+    - 'dnsrecon'
+    - 'fierce'
+    - 'smbmap'
+    - 'sslyze'
+    - 'svmap'
+    - 'svwar'
+    - 'svcrack'
+    - 'svreport'
+    - 'svcrash'
+  selection3:
+    type: 'PROCTITLE'
+    proctitle|contains:
+      - '6870696E6733'
+      - '6670696E67'
+      - '646E737265636F6E'
+      - '646E73656E756D'
+      - '666965726365'
+      - '617270696E67'
+      - '6E6574646973636F766572'
+      - '6E62747363616E'
+      - '6E6D626C6F6F6B7570'
+      - '6F6E6573697874796F6E65'
+      - '736E6D7077616C6B'
+      - '736E6D70636865636B'
+      - '736D626D6170'
+      - '73736C7363616E'
+      - '73736C797A65'
+      - '73766D6170'
+      - '7376776172'
+      - '7376637261636B'
+      - '73767265706F7274'
+      - '73766372617368'
+  condition: selection1 or selection2 and keywords2 or selection3
+falsepositives: 
+  - Legitimate usage of the tool by system administrator or cybersecurity specialist (e.g. to test the firewall)
+  - Utility with similar name but not related to the cybersecurity
+level: medium
+tags:
+  - attack.t1423 
+  - attack.t1046
+  - attack.t1135
+  - attack.t1016 
+---
+description: Detects usage of popular web server directory bruteforcing tools and web scanners
+detection: 
+  selection1:
+    type: 'SYSCALL'  
+    exe|contains:
+      - 'gobuster'
+      - 'ffuf'
+      - 'nikto'
+      - 'whatweb'
+      - 'dirb'
+      - 'feroxbuster'
+  selection2:
+    type: 'EXECVE'
+  keywords2:
+    - 'dirsearch'
+    - 'wfuzz'
+    - 'finalrecon'
+    - 'bfac'
+  selection3:
+    type: 'PROCTITLE'
+    proctitle|contains:
+      - '646972736561726368'    
+      - '676F627573746572'
+      - '7766757A7A'
+      - '66667566'
+      - '6E696B746F'
+      - '77686174776562'
+      - '64697262'
+      - '6665726F78627573746572'
+      - '66696E616C7265636F6E'
+      - '62666163'
+  condition: selection1 or selection2 and keywords2 or selection3
+falsepositives: 
+  - Legitimate usage of the tool by penetration testing specialist
+  - Utility with similar name but not related to the cybersecurity
+level: medium
+tags:
+  - attack.t1083  
+  - attack.t1518  
+---
+description: Detects usage of network traffic sniffing tools
+detection: 
+  selection1:
+    type: 'SYSCALL'
+    exe|contains:
+      - 'ssldump'
+      - 'bettercap'
+      - 'ettercap'
+  selection3:
+    type: 'PROCTITLE'
+    proctitle|contains:
+      - '73736C64756D70'
+      - '626574746572636170'
+      - '6574746572636170'
+  condition: selection1 or selection3
+falsepositives: 
+  - Legitimate usage of the tool by system administrator or network engineer
+  - Utility with similar name but not related to the cybersecurity
+level: medium
+tags:
+  - attack.t1040
+---
+description: Detects usage of brute force attack tools 
+detection:
+  selection1:
+    type: 'SYSCALL'  
+    exe|contains:
+      - 'hydra'
+      - 'ncrack'
+      - 'medusa'
+      - 'kerbrute'
+      - 'cerbero'
+  selection2:
+    type: 'EXECVE'
+  keywords2:
+    - 'patator'
+    - 'crackmapexec'
+    - 'cme'
+  selection3:
+    type: 'PROCTITLE'
+    proctitle|contains:
+      - '6879647261'
+      - '6E637261636B'
+      - '6D6564757361'
+      - '70617461746F72'
+      - '637261636B6D617065786563'
+      - '636D65'
+      - '6B65726272757465'
+      - '6365726265726F'
+  condition: selection1 or selection2 and keywords2 or selection3
+falsepositives: 
+  - Legitimate usage of the tool by penetration testing specialist
+  - Utility with similar name but not related to the cybersecurity
+level: medium
+tags:
+  - attack.t1110

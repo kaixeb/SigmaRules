@@ -1,0 +1,101 @@
+action: global
+title: Executing ngrok
+id: 893f2743-1920-49b7-803a-76f321b60e49
+status: experimental
+author: kaixeb
+date: 2022/12/15
+references:
+  - https://ngrok.com/docs
+  - https://github.com/SigmaHQ/sigma-specification/blob/main/wip/Sigma_2_0_0.md#detection
+  - https://fourcore.io/blogs/sigma-rules-open-source-threat-hunting-approach
+falsepositives: Legitimate usage of the ngrok service by the software developer for the purpose of demonstrating some web resource to the customer before release
+level: medium
+tags:
+  - attack.1568
+  - attack.1567
+  - attack.1572
+  - attack.1090
+  - attack.1102
+---
+logsource:
+  product: Check Point
+description: Detects HTTP and DNS requests which are related to Ngrok URL endpoints
+detection:
+  selection1:
+    type: 'Untrusted Certificate Detected'
+  keywords1:
+    - 'tunnel.ngrok.com'
+    - 'ngrok Inc.'
+  selection2:
+    type: 'Application Control Accept'
+  keywords2:
+    - 'dns.ngrok.com/tunnel.json'
+    - 'Ngrok'
+  keywords3:
+    - 'dns.google.com'
+    - 'Google Public DNS'
+    - 'EquinoxSDK/1.0'
+  keywords4:
+    - 'tunnel.ngrok.com'
+  selection3:
+    type: 'HTTPS Inspect'
+    URL|endswith: 'ngrok.com'
+  condition: selection1 and keywords1 or selection2 and (keywords2 or keywords3 and keywords4) or selection3
+---
+logsource:
+  product: windows
+  service: sysmon
+description: Detects activity of the ngrok agent on the Windows host
+detection:
+  selection1:
+    EventID: 1
+  selection2:
+    Image|endswith: '\ngrok.exe'
+    ParentImage|endswith: '\cmd.exe'
+  selection3:
+    Description: 'The ngrok agent gets you online in one line.'
+    Product: 'ngrok agent'
+  selection4:
+    EventID: 11
+    FileName: 'ngrok.yml'
+  selection5:
+    EventID: 3
+    Image|endswith: '\ngrok.exe'
+  selection6:
+    Protocol: 'tcp'
+  selection7:
+    DestinationIP: 
+      - '8.8.8.8'
+      - '8.8.4.4'
+  selection8:
+    DestinationHostname: 'dns.google'
+  condition: selection1 and (selection2 or selection3) or selection4 or selection5 and (selection6 or selection7 or selection8)
+---
+logsource:
+  product: WindowsDNS
+  service: dnsdebug
+description: Detects DNS queries from ngrok agent
+detection:
+  selection:
+    type: 'HostRecord'
+    keywords: 'tunnel.ngrok.com'
+condition: selection
+---
+logsource:
+  product: linux
+  service: auditd
+description: Detects activity of the ngrok agent on the UNIX/Linux host
+detection:
+  selection1:
+    type: 'SYSCALL'
+    exe|endswith: 'ngrok'
+  selection2:
+    type: 
+    - 'File Accessed'
+    - 'File Created'
+    FilePath|endswith: '/ngrok.yml' 
+  selection3:
+    type: 'PROCTITLE'
+    proctitle|contains: '6E67726F6B'
+  condition: selection1 or selection2 or selection3
+

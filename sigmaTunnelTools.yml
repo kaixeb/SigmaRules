@@ -1,0 +1,142 @@
+title: Executing proxy and tunnel tools on UNIX/Linux
+id: 5960fd81-edc1-49b7-b6b3-79267f6b2055
+status: experimental
+author: kaixeb
+date: 2022/12/05
+references:
+  - https://habr.com/ru/company/pt/blog/513032/
+  - https://ppn.snovvcrash.rocks/pentest/infrastructure/pivoting
+  - https://book.hacktricks.xyz/generic-methodologies-and-resources/tunneling-and-port-forwarding
+  - https://github.com/SigmaHQ/sigma-specification/blob/main/wip/Sigma_2_0_0.md#detection
+logsource:
+  product: linux
+  service: auditd
+description: Detects usage of programs that are capable of running proxy server, tunneling network traffic, port forwarding and similar stuff
+detection: 
+  selection1:
+    type: 'SYSCALL'
+  keywords1:
+    - 'proxychains'
+    - 'socat'
+    - 'chisel'
+    - 'HTran'
+    - 'ssf'
+    - 'ssfd'
+    - 'ssfcp'
+    - 'frps'
+    - 'frpc'
+    - 'admin_linux_x64'
+    - 'admin_linux_x86'
+    - 'admin_macos_x64'
+    - 'agent_linux_x64'
+    - 'agent_linux_x86'
+    - 'agent_macos_x64'
+    - '3proxy'
+    - 'iodine'
+    - 'dnscat'
+    - 'gtuncli'
+    - 'hans'
+    - 'icmptx'
+    - 'ptunnel-ng'
+  selection2:
+    type: 'EXECVE'
+  selection3:
+    - keywordsSsh:
+      keywords: 'ssh'
+      keywords|re: '\s-[DLRw]'
+    - keywordsChiselc:
+      keywords: 'chisel'
+      keywords: 'client'
+    - keywordsChisels:
+      keywords: 'chisel'
+      keywords: 'server'
+    - keywordsHTran:
+      keywords: 'HTran'
+      keywords:
+        - '-listen'
+        - '-tran'
+        - '-slave'
+    - keywordsFrps:
+      keywords: 'frps'
+      keywords: '-c'
+      keywords: 'frps.ini'
+    - keywordsFrpc: 
+      keywords: 'frpc'
+      keywords: '-c'
+      keywords: 'frpc.ini'
+    - keywordsVenom:
+      keywords: 
+        - 'admin_linux_x64'
+        - 'admin_linux_x86'
+        - 'admin_macos_x64'
+        - 'agent_linux_x64'
+        - 'agent_linux_x86'
+        - 'agent_macos_x64'
+      keywords:
+        - '-lhost'
+        - '-rhost'
+        - '-lport'
+        - '-rport'
+    - keywordsHansIcmptx:
+      - keywordsHans:
+        keywords: 'hans'
+        keywords:
+          - '-s'
+          - '-c'
+      - keywordsIcmptx:
+        keywords: 'icmptx'
+        keywords:
+          - '-d'
+          - '-c'
+  selection4:
+    type: 'PROCTITLE'
+  selection5:
+    - selectionCommon:
+      proctitle|contains:
+        - '70726F7879636861696E73'
+        - '736F636174'
+        - '63686973656C00636C69656E74'
+        - '63686973656C00736572766572'
+        - '485472616E002D6C697374656E'
+        - '485472616E2D7472616E'
+        - '485472616E2D736C617665'
+        - '737366'
+        - '66727063'
+        - '66727073'
+        - '3370726F7879'
+        - '696F64696E65'
+        - '646E73636174'
+        - '6774756E636C69'
+        - '7074756E6E656C2D6E67'
+    - selectionVenom:
+      proctitle|contains:
+        - '61646D696E5F6C696E75785F783634'
+        - '61646D696E5F6C696E75785F783836'
+        - '61646D696E5F6D61636F735F783634'
+        - '6167656E745F6C696E75785F783634'
+        - '6167656E745F6C696E75785F783836'
+        - '6167656E745F6D61636F735F783634'
+      proctitle|contains:
+        - '2D6C686F7374'
+        - '2D72686F7374'
+        - '2D6C706F7274'
+        - '2D72706F7274'
+    - selectionHansIcmptx:
+      - selectionHans:
+        proctitle|contains:
+          - '68616E73'
+        proctitle|contains:
+          - '2D73'
+          - '2D63'
+      - selectionIcmptx:
+        proctitle|contains:
+          - '69636D707478'
+        proctitle|contains:
+          - '2D64'
+          - '2D63'
+  condition: (selection1 and keywords1) or (selection2 and selection3) or (selection4 and selection5)
+falsepositives: Legitimate usage of the tool by system administrator, network engineer or software developer
+level: medium
+tags:
+  - attack.t1090
+  - attack.t1572
