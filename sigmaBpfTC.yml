@@ -1,0 +1,46 @@
+title: Detected BPF filter applied using TC
+id: 464cf0e0-7533-4d8b-b48b-bcb76d7b98e5
+status: experimental
+author: kaixeb
+date: 2023/03/29
+references: 
+  - https://man7.org/linux/man-pages/man8/tc.8.html
+  - https://man7.org/linux/man-pages/man8/tc-bpf.8.html
+  - https://netbeez.net/blog/how-to-use-the-linux-traffic-control/
+  - https://blogs.igalia.com/dpino/2019/01/07/introduction-to-xdp-and-ebpf/
+logsource: 
+  product: linux
+  service: auditd
+description: Detects cases of commands using TC and BPF together
+detection: 
+  selection1:
+    type: 'EXECVE'
+  keywords1: 'tc'
+  keywords2: 
+    - 'filter'
+    - 'actions'
+  keywords3:
+    - 'add'
+    - 'change'
+    - 'replace'
+  keywords4: 'bpf'
+  selection2:
+    type: 'PROCTITLE'
+    proctitle|contains: 
+      - '7463'
+    proctitle|contains: 
+      - '66696C746572'
+      - '616374696F6E73'
+    proctitle|contains: 
+      - '616464'
+      - '6368616E6765'
+      - '7265706C616365'
+    proctitle|contains: 
+      - '627066'
+  condition: (selection1 and keywords1 and keywords2 and keywords3 and keywords4) or selection2
+falsepositives: Specialized use cases like pushing new policies, gathering statistics, load balancing traffic, prioritizing
+latency sensitive traffic and many other things that can be accomplished by the system administrator
+level: medium
+tags: 
+ - attack.ta0002
+ - attack.t1059
