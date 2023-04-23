@@ -1,0 +1,35 @@
+title: Possible CVE-2023-21752 exploitation
+id: a2e86c9a-ac90-4c7f-a71f-c72ab61d891c
+status: experimental
+author: kaixeb
+date: 2023/01/26
+references:
+  - https://github.com/Wh04m1001/CVE-2023-21752
+  - https://msrc.microsoft.com/update-guide/vulnerability/CVE-2023-21752
+  - https://www.zerodayinitiative.com/blog/2022/3/16/abusing-arbitrary-file-deletes-to-escalate-privilege-and-other-great-tricks
+logsource:
+  product: windows
+  service: security
+description: Detects activity related to the exploitation of the windows backup service elevation of privilege vulnerability
+detection:
+  selection1:
+    EventID:
+    - 1
+    - 4688
+  ProcessCommandLine|contains: 'SDRSVC'
+  Image: 'C:\Windows\System32\svchost.exe'
+  selection2:
+    EventID: 1013
+    LowLevelCategory: 'Error'
+  keywords2|all:
+    - 'Setup1'
+    - 'roll back'
+  selection3:
+    EventID: 1033
+    LowLevelCategory: 'Application Installed'
+    ProductName|contains: 'Setup1'
+  condition: selection1 and selection2 and keywords2 and selection3
+level: high
+tags:
+  - attack.t1546.016
+  - attack.t1068
