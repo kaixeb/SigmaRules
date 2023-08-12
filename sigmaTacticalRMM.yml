@@ -1,0 +1,111 @@
+action: global
+title: Detected potential Tactical RMM usage
+id: 4159b47e-63ff-45a8-b8c0-f9cba06005df
+status: experimental
+description: Detects the installation (Linux) or usage (Windows) of Tactical RMM software
+references: 
+  - https://docs.tacticalrmm.com/
+  - https://github.com/amidaware/tacticalrmm
+  - https://thedfirreport.com/2022/11/28/emotet-strikes-again-lnk-file-leads-to-domain-wide-ransomware/
+author: kaixeb
+date: 2023/07/17
+tags:
+  - attack.ta0011
+  - attack.t1071.001
+  - attack.t1573.002
+  - attack.t1219
+falsepositives: Legitimate use of Tactical RMM software
+level: medium
+---
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection1:
+    type: 'Privilege Escalation Succeeded'
+  selection2:
+    ProcessCommandLine|contains: '/usr/bin/psql -c CREATE DATABASE'
+  selection3:
+    - ProcessCommandLine|contains: 
+      - 'sites-available'
+      - 'sites-enabled'
+    - HomeDirectory|contains:
+      - 'sites-available'
+      - 'sites-enabled'
+    ProcessCommandLine|contains:
+      - 'rmm.conf'
+      - 'frontend.conf'
+  selection4:
+    - selection:
+        HomeDirectory: '/etc'
+        ProcessCommandLine|contains: 'hosts'
+    - ProcessCommandLine|contains: '/etc/hosts'
+  selection5:
+    type: 'Service (daemon) start'
+    ServiceName:
+      - 'postgresql'
+      - 'nginx'
+      - 'nats'
+      - 'nats-api'
+      - 'rmm'
+      - 'daphne'
+      - 'celery'
+      - 'celerybeat'
+  condition: selection1 and (selection2 or selection3 or selection4) or selection5
+---
+logsource:
+  product: windows
+  service:
+    - security
+    - sysmon
+detection:
+  selection1:
+    EventID:
+      - 7045
+      - 4697
+    - ServiceName|contains: 'TacticalRMM'
+    - ServiceFileName|contains:
+      - 'TacticalAgent'
+      - 'tacticalrmm.exe'
+  selection2:
+    EventID:
+      - 1
+      - 4688
+    - Image|contains:
+      - 'TacticalAgent'
+      - 'tacticalrmm.exe'
+    - ProcessCommandLine|contains|all:
+      - '--site-id'
+      - '-m install'
+      - '--api'
+      - '--client-id'
+      - '--agent-type'
+      - '--auth'
+  selection3:
+    EventID:
+      - 1
+      - 4688
+    - ProcessCommandLine|contains|all: 
+      - 'tacticalrmm.exe'
+      - '-m checkrunner'
+    - ProcessCommandLine|contains|all:
+      - 'Tactical'
+      - 'python.exe'
+  selection4:
+    EventID: 4656
+    Image|re: 'TacticalAgent\\.*?(tacticalrmm|python)\.exe'
+    TargetObject|contains: 
+      - 'Windows\System32\lsass.exe'
+      - 'Control\Lsa'
+  selection5:
+    EventID: 3
+    Image|contains: 'tacticalrmm.exe'
+  selection6:
+    EventID: 22
+    URL|contains: 'icanhazip.tacticalrmm.io'
+  selection7:
+    logsource:
+      product: WindowsDNS
+      service: dnsdebug
+    URL|contains: 'icanhazip.tacticalrmm.io'
+  condition: selection*
