@@ -1,0 +1,32 @@
+title: KRBTGT Delegation Backdoor
+id: 6d8d6a78-41cc-4576-bff9-cafdc78ffa72
+status: experimental
+author: kaixeb
+date: 2023/03/06
+references:
+  - https://www.elastic.co/guide/en/security/current/krbtgt-delegation-backdoor.html
+  - https://skyblue.team/posts/delegate-krbtgt/
+  - https://adsecurity.org/?p=3466
+  - https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/abusing-kerberos-constrained-delegation
+  - https://shenaniganslabs.io/2019/01/28/Wagging-the-Dog.html#unconstrained-domain-persistence
+logsource:
+  product: windows
+  service: security
+description: Detects scenarios where one can control another users or computers account using delegation for krbtgt service
+detection:
+  selection1:
+    EventID: 4738
+    ChangedAttributes|re: 'AllowedToDelegateTo:\skrbtgt.+'
+  selection2:
+    EventID: 5136
+    AttributeLDAPDisplayName: 'msDS-AllowedToDelegateTo'
+    Value|contains: 'krbtgt'
+  condition: selection1 or selection2
+level: high
+falsepositives:
+  - Unknown
+tags:
+  - attack.ta0003
+  - attack.ta0006
+  - attack.t1098
+  - attack.t1558
